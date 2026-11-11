@@ -1,0 +1,16 @@
+{
+  "name": "blueworld-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "BlueWorld project site — bilingual (EN/中文) research showcase with synchronized multi-view video demos.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "media": "bash scripts/generate-media.sh"
+  },
+  "devDependencies": {
+    "vite": "^5.4.11"
+  }
+}

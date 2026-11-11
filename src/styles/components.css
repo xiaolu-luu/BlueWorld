@@ -1,0 +1,364 @@
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  border-radius: 999px;
+  font-size: 14.5px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  transition: transform var(--dur) var(--ease), background var(--dur) var(--ease),
+    border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn-primary:hover {
+  background: var(--accent-strong);
+}
+
+.btn-outline {
+  border-color: var(--line-2);
+  color: var(--text);
+}
+
+.btn-outline:hover {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+/* ---------- Section scaffolding ---------- */
+.section {
+  padding: 96px 0;
+  scroll-margin-top: var(--header-h);
+}
+
+.section + .section {
+  border-top: 1px solid var(--line);
+}
+
+.section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 40px;
+}
+
+.section-head h2 {
+  font-size: clamp(28px, 4vw, 42px);
+  letter-spacing: var(--track-display);
+}
+
+/* ---------- Reveal on scroll ---------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+}
+
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ---------- Demo shell ---------- */
+.demo {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.demo-body {
+  padding: 18px;
+}
+
+@media (max-width: 639px) {
+  .demo-body {
+    padding: 10px;
+  }
+}
+
+.demo-media {
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-2);
+}
+
+.demo-foot {
+  margin-top: 14px;
+}
+
+.demo-summary {
+  margin-top: 12px;
+  font-size: 13.5px;
+  color: var(--text-3);
+}
+
+.demo-hint {
+  font-size: 13px;
+  color: var(--text-3);
+  margin: 10px 0 14px;
+}
+
+/* ---------- Tabs ---------- */
+.tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-btn {
+  flex: none;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  border: 1px solid transparent;
+  transition: all var(--dur) var(--ease);
+}
+
+.tab-btn:hover {
+  color: var(--text);
+  background: var(--surface-3);
+}
+
+.tab-btn[aria-selected='true'] {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* ---------- Media player ---------- */
+.media-player {
+  position: relative;
+}
+
+.media-player video {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #0a141c;
+}
+
+.mp-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.mp-play {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(10, 20, 30, 0.55);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  transition: transform var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+.mp-play:hover {
+  transform: scale(1.06);
+  background: rgba(10, 20, 30, 0.72);
+}
+
+.mp-play svg {
+  width: 22px;
+  height: 22px;
+  margin-left: 3px;
+}
+
+.media-player.is-playing .mp-overlay {
+  display: none;
+}
+
+.mp-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.mp-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius);
+  color: var(--text-2);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.mp-btn:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.mp-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.mp-seek {
+  flex: 1;
+  min-width: 60px;
+  appearance: none;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  cursor: pointer;
+}
+
+.mp-seek::-webkit-slider-thumb {
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--surface);
+}
+
+.mp-time {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-3);
+  min-width: 86px;
+  text-align: center;
+}
+
+.mp-speed {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  padding: 3px 10px;
+  transition: all var(--dur) var(--ease);
+}
+
+.mp-speed:hover {
+  color: var(--accent);
+  border-color: var(--accent-line);
+}
+
+.mp-error {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  text-align: center;
+  font-size: 14px;
+  color: #f3d9c9;
+  background: rgba(8, 14, 20, 0.88);
+}
+
+.mp-error .btn {
+  margin-top: 10px;
+}
+
+/* ---------- Media caption bar ---------- */
+.media-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-2);
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.media-caption strong {
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+/* ---------- Status pill ---------- */
+.status-pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.status-progress {
+  color: var(--amber);
+  background: var(--amber-soft);
+  border: 1px solid var(--amber-line);
+}
+
+/* ---------- Lightbox ---------- */
+.lightbox {
+  border: 0;
+  padding: 0;
+  background: rgba(5, 10, 16, 0.92);
+  max-width: 94vw;
+  max-height: 94vh;
+}
+
+.lightbox::backdrop {
+  background: rgba(5, 10, 16, 0.7);
+}
+
+.lightbox img {
+  max-width: 94vw;
+  max-height: 86vh;
+  object-fit: contain;
+}
+
+.lightbox-close {
+  position: fixed;
+  top: 18px;
+  right: 22px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  font-size: 26px;
+  line-height: 1;
+  color: #e8f2fa;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background var(--dur) var(--ease);
+}
+
+.lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
