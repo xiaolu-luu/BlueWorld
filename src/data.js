@@ -17,19 +17,27 @@ export const REPORT = {
 }`,
 };
 
-/** Landing: one source video, seven crops. x/y/w/h are in source-video pixels (1280x720 placeholders). */
+/** Landing: synchronized GT, HDMap and prediction layers for seven camera views. */
 export const LANDING = {
-  openingSrc: 'media/landing/opening.mp4',
-  src: 'media/landing/synchronized.mp4',
+  fps: 15,
+  duration: 27,
   views: [
-    { id: 1, side: 'main', poster: 'media/landing/view-01.jpg', crop: [120, 0, 640, 720] },
-    { id: 2, side: 'a', poster: 'media/landing/view-02.jpg', crop: [760, 0, 400, 300] },
-    { id: 3, side: 'b', poster: 'media/landing/view-03.jpg', crop: [760, 210, 400, 300] },
-    { id: 4, side: 'c', poster: 'media/landing/view-04.jpg', crop: [760, 420, 400, 300] },
-    { id: 5, side: 'd', poster: 'media/landing/view-05.jpg', crop: [0, 0, 200, 360] },
-    { id: 6, side: 'e', poster: 'media/landing/view-06.jpg', crop: [0, 360, 200, 360] },
-    { id: 7, side: 'f', poster: 'media/landing/view-07.jpg', crop: [120, 700, 300, 100] },
-  ],
+    { id: '00', position: 'front-main' },
+    { id: '01', position: 'front-narrow' },
+    { id: '02', position: 'front-left' },
+    { id: '03', position: 'front-right' },
+    { id: '04', position: 'rear-left' },
+    { id: '05', position: 'rear-right' },
+    { id: '06', position: 'rear' },
+  ].map((view) => ({
+    ...view,
+    poster: `media/landing/origin/gt-view${view.id}.jpg`,
+    sources: {
+      gt: `media/landing/origin/gt-view${view.id}.mp4`,
+      hdmap: `media/landing/origin/hdmap-view${view.id}.mp4`,
+      pred: `media/landing/origin/pred-view${view.id}.mp4`,
+    },
+  })),
 };
 
 /** 02 Control: one clip per control signal. */
@@ -38,6 +46,30 @@ export const CONTROL_ITEMS = [
   { controlType: 'road_marker', src: 'media/control/road_marker.mp4', poster: 'media/control/road_marker.jpg', isReference: true },
   { controlType: 'traffic_light', src: 'media/control/traffic_light.mp4', poster: 'media/control/traffic_light.jpg', isReference: true },
 ];
+
+/** 02 Control: synchronized weather transformation comparison. */
+const WEATHER_VIEWS = [
+  { id: '00', name: 'frontMain' },
+  { id: '01', name: 'frontNarrow' },
+  { id: '02', name: 'sideFrontLeft' },
+  { id: '03', name: 'sideFrontRight' },
+  { id: '04', name: 'sideRearLeft' },
+  { id: '05', name: 'sideRearRight' },
+  { id: '06', name: 'rear' },
+];
+
+export const WEATHER = {
+  fps: 15,
+  defaultCondition: 'snow',
+  conditions: ['snow', 'rain', 'fog', 'night', 'dusk'].map((id) => ({
+    id,
+    views: WEATHER_VIEWS.map((view) => ({
+      ...view,
+      gt: `media/weather/${id}/gt-view${view.id}.mp4`,
+      pred: `media/weather/${id}/pred-view${view.id}.mp4`,
+    })),
+  })),
+};
 
 /** 03 Grounding groups. */
 export const GROUNDING_CAMS = [0, 2, 3, 4, 5, 6, 7]; // camera 1 is the dashcam itself
@@ -104,10 +136,9 @@ export const FLAGS = {
 /** Every media URL the site uses — the media-cache service worker precaches this list. */
 export function allMediaUrls() {
   const urls = new Set([
-    LANDING.openingSrc,
-    LANDING.src,
-    ...LANDING.views.map((v) => v.poster),
+    ...LANDING.views.flatMap((view) => [view.poster, ...Object.values(view.sources)]),
     ...CONTROL_ITEMS.map((c) => c.src),
+    ...WEATHER.conditions.flatMap((condition) => condition.views.flatMap((view) => [view.gt, view.pred])),
     ...GROUNDING_3DGS.map((c) => c.src),
     ...DASHCAM.src ? [DASHCAM.src, DASHCAM.poster] : [],
     CLOSED_LOOP.clip,

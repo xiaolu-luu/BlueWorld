@@ -14,23 +14,17 @@
     <meta property="og:title" content="BlueWorld: Building Controllable Virtual Cities with World Models" />
     <meta property="og:description" content="Building Controllable Virtual Cities with World Models" />
     <meta property="og:locale" content="en_US" />
-    <meta property="og:image" content="media/landing/view-01.jpg" />
-    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <link rel="preload" as="image" href="media/landing/view-01.jpg" />
+    <meta property="og:image" content="media/landing/origin/gt-view00.jpg" />
+    <link rel="icon" type="image/svg+xml" href="NIO_Masterbrand_Symbol.svg" />
+    <link rel="preload" as="image" href="media/landing/origin/gt-view00.jpg" />
   </head>
   <body class="i18n-pending">
     <a class="skip-link" href="#main" data-i18n="a11y.skip">Skip to content</a>
 
     <header class="site-header" id="site-header">
       <div class="header-inner">
-        <a class="brand" href="#top" aria-label="BlueWorld">
-          <svg class="brand-logo" viewBox="0 0 132 20" width="132" height="20" aria-hidden="true">
-            <title>BlueWorld</title>
-            <circle cx="10" cy="10" r="8.2" fill="none" stroke="var(--accent)" stroke-width="2.2" />
-            <path d="M6 5.4c2.6 1.7 2.6 7.5 0 9.2M14 5.4c-2.6 1.7-2.6 7.5 0 9.2" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" />
-            <path d="M1.8 10h16.4" stroke="var(--accent)" stroke-width="2.2" />
-            <text x="26" y="15" font-size="14.5" font-weight="700" letter-spacing=".02em" fill="var(--text)">Blue<tspan fill="var(--accent)">World</tspan></text>
-          </svg>
+        <a class="brand" href="#top" aria-label="NIO">
+          <img class="brand-logo" src="NIO_logo.svg" width="104" height="36" alt="NIO" />
         </a>
 
         <nav class="nav-links" data-i18n-attr="aria-label:a11y.mainNav" aria-label="Main navigation">
@@ -79,14 +73,10 @@
     </div>
 
     <main id="main">
-      <!-- Landing: one source video, seven synchronized crops. Config in data.js. -->
+      <!-- Landing: seven synchronized cameras, each transitioning GT -> HDMap -> prediction. -->
       <section class="landing" id="top" aria-labelledby="landing-title">
         <div class="landing-pin" id="landing-stage">
           <div class="landing-ambient" aria-hidden="true"></div>
-          <div class="landing-world-title">
-            <h2 data-i18n="landing.worldTitle"></h2>
-            <p class="landing-world-lede" data-i18n="landing.worldLede"></p>
-          </div>
           <div class="landing-views" id="landing-views"></div>
           <div class="landing-veil" aria-hidden="true"></div>
           <div class="landing-copy">
@@ -97,6 +87,14 @@
               <button class="btn landing-primary" id="landing-expand" type="button"><span data-i18n="landing.explore"></span><span aria-hidden="true">↗</span></button>
               <a class="landing-report js-report-link" href="https://arxiv.org/abs/2611.00596" target="_blank" rel="noopener"><span data-i18n="hero.ctaReport"></span><span aria-hidden="true">↗</span></a>
             </div>
+          </div>
+          <div class="landing-sequence" aria-hidden="true">
+            <span data-i18n="landing.sequenceLabel"></span>
+            <ol>
+              <li data-landing-phase="gt" data-i18n="landing.phaseGt"></li>
+              <li data-landing-phase="hdmap" data-i18n="landing.phaseHdmap"></li>
+              <li data-landing-phase="pred" data-i18n="landing.phasePred"></li>
+            </ol>
           </div>
           <div class="landing-world-caption">
             <div class="landing-sync"><span class="landing-status-dot"></span><span data-i18n="landing.synchronized"></span></div>
@@ -179,6 +177,16 @@
           <div class="demo-foot">
             <p class="note note-ref" data-ref-note="control" hidden><span class="badge badge-ref" data-i18n="common.placeholder"></span><span data-i18n="control.placeholderNote"></span></p>
           </div>
+          <section class="weather-part" id="weather" aria-labelledby="weather-title">
+            <header class="weather-part-head reveal">
+              <div>
+                <p class="micro-label" data-i18n="weather.eyebrow"></p>
+                <h3 id="weather-title" data-i18n="weather.title"></h3>
+              </div>
+              <p data-i18n="weather.lede"></p>
+            </header>
+            <div id="weather-demo" class="weather-demo reveal"></div>
+          </section>
         </div>
       </section>
 

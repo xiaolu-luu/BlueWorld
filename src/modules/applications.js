@@ -19,12 +19,23 @@ function initDashcam() {
   const stage = document.getElementById('dashcam-stage');
   if (!stage) return;
 
-  createPlayer(stage, {
+  const player = createPlayer(stage, {
     src: DASHCAM.src,
     poster: DASHCAM.poster,
     loop: true,
     caption: true,
   });
+
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) player.play();
+        else player.pause();
+      },
+      { threshold: 0.25 },
+    );
+    observer.observe(stage);
+  }
 
   const meta = document.createElement('div');
   meta.className = 'dashcam-meta';

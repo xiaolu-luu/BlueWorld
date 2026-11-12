@@ -81,18 +81,16 @@ export function initControl() {
   select(CONTROL_ITEMS[0].controlType);
   onLangChange(renderLang);
 
-  // Play when scrolled into view.
+  // Play whenever the demo is visible; pause off-screen to avoid wasted decode.
   if ('IntersectionObserver' in window) {
     const io = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) {
-            io.disconnect();
-            player.play().catch(() => {});
-          }
+          if (entry.isIntersecting) player.play();
+          else player.pause();
         }
       },
-      { threshold: 0.35 },
+      { threshold: 0.25 },
     );
     io.observe(mount);
   }

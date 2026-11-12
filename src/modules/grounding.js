@@ -107,10 +107,9 @@ export function initGrounding() {
     const io = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          const video = entry.target.querySelector('video');
-          if (!video) continue;
-          if (entry.isIntersecting) video.play().catch(() => {});
-          else video.pause();
+          const videos = entry.target.querySelectorAll('video');
+          if (entry.isIntersecting) videos.forEach((video) => video.play().catch(() => {}));
+          else videos.forEach((video) => video.pause());
         }
       },
       { threshold: 0.3 },

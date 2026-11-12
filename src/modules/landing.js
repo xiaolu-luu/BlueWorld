@@ -1,201 +1,234 @@
 /**
- * Landing stage: one hidden <video> source, seven <canvas> tiles that each draw
- * their own crop of the current frame — fully synchronized by construction.
- * The stage plays `opening` first, then switches to `synchronized` once the
- * visitor has scrolled a little past the top (mirroring the reference behaviour).
+ * Landing sequence: seven synchronized camera views, each with GT, HDMap and
+ * prediction layers. A shared video clock drives every visual transition so
+ * the three representations blend without source swaps or black frames.
  */
 
 import { LANDING } from '../data.js';
 import { t } from '../i18n.js';
+
+const KINDS = ['gt', 'hdmap', 'pred'];
+
+const clamp01 = (value) => Math.min(1, Math.max(0, value));
+const smoothstep = (value) => {
+  const t = clamp01(value);
+  return t * t * (3 - 2 * t);
+};
+
+function transitionState(time, reducedMotion) {
+  const state = Object.fromEntries(KINDS.map((kind) => [kind, { opacity: 0, blur: 0, scale: 1 }]));
+  let phase = 'gt';
+  let transition = 0;
+
+  const hold = (kind) => {
+    state[kind].opacity = 1;
+    phase = kind;
+  };
+
+  const blend = (from, to, start, end) => {
+    const progress = smoothstep((time - start) / (end - start));
+    const incoming = state[to];
+    const outgoing = state[from];
+    outgoing.opacity = 1 - progress;
+    incoming.opacity = progress;
+    transition = Math.sin(Math.PI * progress);
+    phase = progress < 0.5 ? from : to;
+
+    if (!reducedMotion) {
+      outgoing.blur = progress * 7;
+      outgoing.scale = 1 + progress * 0.025;
+      incoming.blur = (1 - progress) * 9;
+      incoming.scale = 0.985 + progress * 0.015;
+    }
+  };
+
+  if (time < 1.5) hold('gt');
+  else if (time < 3) blend('gt', 'hdmap', 1.5, 3);
+  else if (time < 4) hold('hdmap');
+  else if (time < 5.5) blend('hdmap', 'pred', 4, 5.5);
+  else if (time < 25.5) hold('pred');
+  else blend('pred', 'gt', 25.5, LANDING.duration);
+
+  return { state, phase, transition };
+}
 
 export function initLanding() {
   const stage = document.getElementById('landing-stage');
   const wrap = document.getElementById('landing-views');
   if (!stage || !wrap) return;
 
+  const landing = stage.closest('.landing');
   const errorEl = document.getElementById('landing-error');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-  const isMobile = matchMedia('(max-width: 959px)');
-
-  const video = document.createElement('video');
-  video.muted = true;
-  video.loop = true;
-  video.playsInline = true;
-  video.preload = 'none';
-  video.setAttribute('playsinline', '');
-  video.setAttribute('aria-hidden', 'true');
-  video.tabIndex = -1;
-  video.className = 'landing-source';
+  const phaseEls = [...stage.querySelectorAll('[data-landing-phase]')];
+  const videos = [];
+  let master;
 
   const tiles = LANDING.views.map((view, index) => {
     const figure = document.createElement('figure');
-    figure.className = `landing-view landing-view-${view.side}`;
-    figure.dataset.view = view.id;
-    figure.setAttribute('aria-label', t('landing.viewLabel', { n: view.id }));
+    figure.className = `landing-view landing-view-${view.position}`;
+    figure.style.setProperty('--view-index', index);
+    figure.setAttribute('aria-label', t('landing.viewLabel', { n: index + 1 }));
 
     const poster = document.createElement('img');
+    poster.src = view.poster;
     poster.alt = '';
     poster.decoding = 'async';
-    if (index === 0) poster.src = view.poster;
     poster.fetchPriority = index === 0 ? 'high' : 'low';
+    figure.append(poster);
 
-    const canvas = document.createElement('canvas');
-    canvas.setAttribute('aria-hidden', 'true');
+    for (const kind of KINDS) {
+      const video = document.createElement('video');
+      video.className = `landing-media landing-media-${kind}`;
+      video.src = view.sources[kind];
+      video.muted = true;
+      video.loop = true;
+      video.playsInline = true;
+      video.disablePictureInPicture = true;
+      video.preload = kind === 'gt' ? 'auto' : 'metadata';
+      video.setAttribute('playsinline', '');
+      video.setAttribute('aria-hidden', 'true');
+      video.tabIndex = -1;
 
-    figure.append(poster, canvas);
+      video.addEventListener('loadeddata', () => {
+        if (kind === 'gt') figure.classList.add('is-ready');
+        if (kind === 'gt' && index === 0) landing.classList.add('has-frames');
+      });
+      video.addEventListener('error', () => {
+        if (kind === 'gt') figure.classList.add('has-media-error');
+        if (video === master && errorEl) {
+          errorEl.textContent = t('landing.loadError');
+          errorEl.hidden = false;
+        }
+      });
+
+      figure.append(video);
+      videos.push(video);
+      if (kind === 'gt' && index === 0) master = video;
+    }
+
     wrap.append(figure);
-    return { ...view, figure, canvas, poster };
+    return figure;
   });
 
-  stage.append(video);
-
-  let activated = false; // user has interacted / scrolled far enough
-  let source = null; // 'opening' | 'sync'
+  let activated = false;
+  let inView = false;
   let rafId = null;
-  let hasFrames = false;
-  let hasSideFrames = false;
-  const hasRVFC = 'requestVideoFrameCallback' in video;
+  let currentPhase = '';
+  let lastSyncAt = 0;
 
-  function draw() {
-    if (video.readyState < 2) return;
-    const full = source === LANDING.src;
-    for (const tile of tiles) {
-      const crop = full ? tile.crop : [0, 0, video.videoWidth, video.videoHeight];
-      const [sx, sy, sw, sh] = crop;
-      if (sw === 0 || sh === 0) continue;
-      if (tile.canvas.width !== sw || tile.canvas.height !== sh) {
-        tile.canvas.width = sw;
-        tile.canvas.height = sh;
-      }
-      const ctx = tile.canvas.getContext('2d', { alpha: false });
-      if (ctx) ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
+  function render(time) {
+    const timeline = transitionState(time % LANDING.duration, reducedMotion.matches);
+
+    for (const kind of KINDS) {
+      const values = timeline.state[kind];
+      stage.style.setProperty(`--${kind}-opacity`, values.opacity.toFixed(4));
+      stage.style.setProperty(`--${kind}-blur`, `${values.blur.toFixed(2)}px`);
+      stage.style.setProperty(`--${kind}-scale`, values.scale.toFixed(4));
     }
-    const landing = stage.closest('.landing');
-    if (!hasFrames) {
-      hasFrames = true;
-      landing.classList.add('has-frames');
-    }
-    if (full && !hasSideFrames) {
-      hasSideFrames = true;
-      landing.classList.add('has-side-frames');
+    stage.style.setProperty('--copy-blur', reducedMotion.matches ? '0px' : `${(timeline.transition * 0.45).toFixed(2)}px`);
+    stage.style.setProperty('--copy-opacity', (1 - timeline.transition * 0.06).toFixed(3));
+    stage.classList.toggle('is-transitioning', timeline.transition > 0.05);
+
+    if (timeline.phase !== currentPhase) {
+      currentPhase = timeline.phase;
+      stage.dataset.phase = currentPhase;
+      for (const item of phaseEls) item.classList.toggle('is-active', item.dataset.landingPhase === currentPhase);
     }
   }
 
-  function stopLoop() {
-    if (rafId === null) return;
-    if (hasRVFC) video.cancelVideoFrameCallback(rafId);
-    else cancelAnimationFrame(rafId);
+  function synchronize(now) {
+    if (!master || master.readyState < 2 || now - lastSyncAt < 500) return;
+    lastSyncAt = now;
+    const masterTime = master.currentTime;
+
+    for (const video of videos) {
+      if (video === master || video.readyState < 2) continue;
+      const drift = video.currentTime - masterTime;
+      if (Math.abs(drift) > 0.14) {
+        video.currentTime = masterTime;
+        video.playbackRate = 1;
+      } else {
+        video.playbackRate = Math.min(1.025, Math.max(0.975, 1 - drift * 0.12));
+      }
+      if (video.paused && inView && !document.hidden) video.play().catch(() => {});
+    }
+  }
+
+  function tick(now) {
+    rafId = null;
+    if (!master || master.paused || !inView || document.hidden) return;
+    render(master.currentTime);
+    synchronize(now);
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function startTicking() {
+    if (rafId === null) rafId = requestAnimationFrame(tick);
+  }
+
+  function stopTicking() {
+    if (rafId !== null) cancelAnimationFrame(rafId);
     rafId = null;
   }
 
-  function loop() {
-    if (rafId !== null || video.paused) return;
-    const next = () => {
-      rafId = null;
-      draw();
-      loop();
-    };
-    rafId = hasRVFC ? video.requestVideoFrameCallback(next) : requestAnimationFrame(next);
-  }
-
-  function showError() {
-    if (errorEl) {
+  async function playAll() {
+    if (!activated || !inView || document.hidden) return;
+    const results = await Promise.allSettled(videos.map((video) => video.play()));
+    if (results.every((result) => result.status === 'rejected') && errorEl) {
       errorEl.textContent = t('landing.loadError');
       errorEl.hidden = false;
+    } else if (errorEl) {
+      errorEl.hidden = true;
     }
+    startTicking();
   }
 
-  /** Which source should be playing right now? */
-  function wantedSource() {
-    const scrolled = scrollY > viewportFrac() && !isMobile.matches;
-    return scrolled ? LANDING.src : LANDING.openingSrc;
+  function pauseAll() {
+    videos.forEach((video) => video.pause());
+    stopTicking();
   }
-
-  function viewportFrac() {
-    return Math.max(1, stage.offsetHeight * 0.12);
-  }
-
-  function syncSource() {
-    const wanted = wantedSource();
-    if (wanted === source) return;
-    const rect = stage.getBoundingClientRect();
-    if (rect.bottom <= 0 || rect.top >= innerHeight) return; // off-screen: skip work
-    const time = video.currentTime;
-    source = wanted;
-    stopLoop();
-    video.src = source;
-    if (time > 0.1) video.currentTime = time;
-    video.play().then(loop).catch(() => {});
-  }
-
-  video.addEventListener('loadeddata', () => {
-    if (errorEl) errorEl.hidden = true;
-    draw();
-  });
-  video.addEventListener('seeked', draw);
-  video.addEventListener('play', loop);
-  video.addEventListener('pause', stopLoop);
-  video.addEventListener('error', () => {
-    if (!source) return;
-    showError();
-  });
 
   function activate() {
     if (activated) return;
     activated = true;
-    source = LANDING.openingSrc;
-    video.src = source;
-    video.play().then(loop).catch(() => {
-      // Autoplay refused — retry muted (already muted, some browsers still need a tick).
-      setTimeout(() => video.play().then(loop).catch(showError), 400);
-    });
+    for (const video of videos) {
+      video.preload = 'auto';
+      video.load();
+    }
+    playAll();
   }
 
-  // Start when the landing first becomes visible.
+  render(0);
+  requestAnimationFrame(() => landing.classList.add('is-visible'));
+
   if ('IntersectionObserver' in window) {
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            io.disconnect();
-            activate();
-          }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        inView = entry.isIntersecting;
+        if (inView) {
+          activate();
+          playAll();
+        } else if (activated) {
+          pauseAll();
         }
       },
-      { threshold: 0.2 },
+      { threshold: 0.08 },
     );
-    io.observe(stage);
+    observer.observe(stage);
   } else {
+    inView = true;
     activate();
   }
 
-  const markVisible = () => stage.closest('.landing').classList.toggle('is-visible', true);
-  requestAnimationFrame(markVisible);
-
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      video.pause();
-    } else if (activated && !reducedMotion.matches) {
-      syncSource();
-      video.play().then(loop).catch(() => {});
-    }
+    if (document.hidden) pauseAll();
+    else if (inView) playAll();
   });
 
-  let scrollTick = false;
-  addEventListener(
-    'scroll',
-    () => {
-      if (scrollTick) return;
-      scrollTick = true;
-      requestAnimationFrame(() => {
-        scrollTick = false;
-        if (activated) syncSource();
-      });
-    },
-    { passive: true },
-  );
+  master?.addEventListener('play', startTicking);
+  master?.addEventListener('seeked', () => render(master.currentTime));
 
-  // Expand button scrolls to the overview section.
   document.getElementById('landing-expand')?.addEventListener('click', () => {
     document.getElementById('overview')?.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth' });
   });
@@ -203,25 +236,5 @@ export function initLanding() {
     document.getElementById('overview')?.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth' });
   });
 
-  // Side posters load lazily: only the main tile's poster is fetched up front.
-  let sidePostersLoaded = false;
-  function loadSidePosters() {
-    if (sidePostersLoaded) return;
-    sidePostersLoaded = true;
-    tiles.slice(1).forEach((tile) => {
-      tile.poster.src = tile.posterSrc;
-    });
-  }
-  tiles.forEach((tile, i) => {
-    tile.posterSrc = LANDING.views[i].poster;
-    if (i > 0) tile.poster.removeAttribute('src');
-  });
-  addEventListener(
-    'scroll',
-    () => {
-      if (scrollY > 40) loadSidePosters();
-    },
-    { passive: true, once: true },
-  );
-  setTimeout(loadSidePosters, 2500); // fallback
+  return { tiles, videos };
 }

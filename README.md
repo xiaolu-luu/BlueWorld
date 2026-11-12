@@ -4,12 +4,13 @@ BlueWorld 项目官网 / Project site — 双语（EN / 中文）研究展示站
 
 功能总览 / Feature set:
 
-- **Landing 首屏**：单路视频源 → 7 路同步画面（主视角 + 6 个侧视角），滚动后自动切换 `opening` → `synchronized` 片段
+- **Landing 首屏**：7 路环视画面同步播放，在同一时间轴上自然叠加切换 `GT` → `HDMap` → `Pred`
 - **i18n 双语**：英文 / 中文一键切换，选择持久化（localStorage），`data-i18n` 驱动全部文案
 - **导航**：吸顶 header、滚动进度条、当前小节高亮（scroll-spy）、移动端抽屉菜单
 - **00 Overview**：进展卡片 + 应用入口卡片
 - **01 Model & Data**：可交互架构图（4 种条件注入路径可选切换）+ 技术要点列表
 - **02 Control**：3 个标签页（车道 / 路标 / 红绿灯），自动轮播，自定义播放器（播放/暂停、倍速、进度、逐帧、全屏、循环）
+- **天气变换**：Snow / Rain / Fog / Night / Dusk 五种模式，14 路独立视频同步播放，7 个机位按环视 3×3 布局排列，通过同步竖线叠加比较 GT 与天气预测
 - **03 Scene Grounding**：参考图 / 3DGS / 点云 三组画廊，含 condition vs generated 对比查看器
 - **04 Post-training**：长时程生成对比（sf / csf）+ 交互式 RL 演示（canvas 键盘/按钮控制的小型驾驶仿真）
 - **05 Applications**：行车记录仪数据生产演示 + 闭环仿真（视频与 BEV 轨迹画布同步播放）
@@ -35,8 +36,9 @@ npm run preview  # 本地预览构建产物
 ```
 ├── index.html              # 页面骨架（各 section 均为挂载点）
 ├── public/
-│   ├── favicon.svg
-│   ├── media/…             # 占位视频 / 海报图 / bev.json 轨迹数据
+│   ├── NIO_Masterbrand_Symbol.svg
+│   ├── NIO_logo.svg
+│   ├── media/…             # 占位视频、天气视频、海报图与 BEV 轨迹
 │   └── media-cache.js       # 媒体缓存 Service Worker
 ├── scripts/
 │   └── generate-media.sh    # 占位媒体生成脚本（ffmpeg）
