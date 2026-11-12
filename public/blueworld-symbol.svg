@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" role="img" aria-labelledby="title">
+  <title id="title">BlueWorld</title>
+  <g fill="none" stroke="#14242e" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="36" cy="36" r="27" stroke-width="5"/>
+    <path d="M36 9c-8 8-12 17-12 27s4 19 12 27M36 9c8 8 12 17 12 27s-4 19-12 27" stroke-width="3.5"/>
+    <path d="M10 38c8-9 16-9 24 0s16 9 28 0" stroke="#0b5ea8" stroke-width="5"/>
+  </g>
+</svg>

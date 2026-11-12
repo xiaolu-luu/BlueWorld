@@ -36,8 +36,8 @@ npm run preview  # 本地预览构建产物
 ```
 ├── index.html              # 页面骨架（各 section 均为挂载点）
 ├── public/
-│   ├── NIO_Masterbrand_Symbol.svg
-│   ├── NIO_logo.svg
+│   ├── blueworld-logo.svg
+│   ├── blueworld-symbol.svg
 │   ├── media/…             # 占位视频、天气视频、海报图与 BEV 轨迹
 │   └── media-cache.js       # 媒体缓存 Service Worker
 ├── scripts/
